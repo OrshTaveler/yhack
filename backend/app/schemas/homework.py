@@ -8,6 +8,11 @@ from pydantic import BaseModel, Field
 from app.core.enums import HomeworkStatus
 
 
+class PlagiarismSource(BaseModel):
+    url: str | None = None
+    plagiat: float | None = None
+
+
 class HomeworkOut(BaseModel):
     id: UUID
     student_id: UUID
@@ -21,6 +26,13 @@ class HomeworkOut(BaseModel):
     ai_comment: str | None = None
     teacher_grade: float | None = None
     status: HomeworkStatus
+
+    # Результаты пайплайна проверки
+    ocr_text: str | None = None
+    text_unique: float | None = None
+    plagiarism_sources: list[PlagiarismSource] = []
+    ai_probability: float | None = None
+    ai_detector_reason: str | None = None
 
 
 class HomeworkListResponse(BaseModel):

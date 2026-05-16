@@ -1,9 +1,19 @@
 from __future__ import annotations
 
 import io
+import json
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+    status,
+)
 from sqlalchemy.orm import Session, joinedload
 
 from app.config import get_settings
@@ -13,8 +23,13 @@ from app.dependencies import get_current_user, require_roles
 from app.models.homework import HomeworkSubmission
 from app.models.school import StudentEnrollment
 from app.models.user import User
-from app.schemas.homework import GradeUpdateRequest, HomeworkListResponse, HomeworkOut
-from app.services.homework_ai import run_ai_review
+from app.schemas.homework import (
+    GradeUpdateRequest,
+    HomeworkListResponse,
+    HomeworkOut,
+    PlagiarismSource,
+)
+from app.services.homework_ai import run_homework_pipeline
 from app.services.storage import get_presigned_url, upload_file
 
 router = APIRouter(prefix="/homework", tags=["homework"])
@@ -22,6 +37,18 @@ router = APIRouter(prefix="/homework", tags=["homework"])
 
 def _homework_to_out(item: HomeworkSubmission) -> HomeworkOut:
     settings = get_settings()
+    try:
+        photo_url = get_presigned_url(settings.minio_bucket_homework, item.file_key)
+    except Exception:  # noqa: BLE001 — демо-данные с фейковым ключом
+        photo_url = ""
+
+    sources: list[PlagiarismSource] = []
+    if item.plagiarism_sources:
+        try:
+            sources = [PlagiarismSource(**s) for s in json.loads(item.plagiarism_sources)]
+        except (json.JSONDecodeError, TypeError):
+            sources = []
+
     return HomeworkOut(
         id=item.id,
         student_id=item.student_id,
@@ -29,12 +56,17 @@ def _homework_to_out(item: HomeworkSubmission) -> HomeworkOut:
         class_id=item.class_id,
         subject_id=item.subject_id,
         subject_name=item.subject.name,
-        photo_url=get_presigned_url(settings.minio_bucket_homework, item.file_key),
+        photo_url=photo_url,
         submitted_at=item.submitted_at,
         ai_grade=item.ai_grade,
         ai_comment=item.ai_comment,
         teacher_grade=item.teacher_grade,
         status=item.status,
+        ocr_text=item.ocr_text,
+        text_unique=item.text_unique,
+        plagiarism_sources=sources,
+        ai_probability=item.ai_probability,
+        ai_detector_reason=item.ai_detector_reason,
     )
 
 
@@ -79,6 +111,7 @@ def list_my_homework(
 
 @router.post("/upload", response_model=HomeworkOut, status_code=status.HTTP_201_CREATED)
 async def upload_homework(
+    background_tasks: BackgroundTasks,
     subject_id: UUID = Form(...),
     class_id: UUID | None = Form(None),
     file: UploadFile = File(...),
@@ -114,12 +147,16 @@ async def upload_homework(
         class_id=resolved_class_id,
         subject_id=subject_id,
         file_key=key,
+        status=HomeworkStatus.pending,
     )
     db.add(submission)
-    db.flush()
-    run_ai_review(submission)
     db.commit()
     db.refresh(submission)
+
+    # Пайплайн проверки (OCR → антиплагиат → AI-детектор) — в фоне,
+    # т.к. text.ru может проверять до минуты. Ответ ученику — сразу.
+    background_tasks.add_task(run_homework_pipeline, submission.id)
+
     submission = (
         db.query(HomeworkSubmission)
         .options(joinedload(HomeworkSubmission.student), joinedload(HomeworkSubmission.subject))

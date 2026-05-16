@@ -10,6 +10,11 @@ export interface ScheduleSlotDto {
   room?: string | null;
 }
 
+export interface PlagiarismSourceDto {
+  url?: string | null;
+  plagiat?: number | null;
+}
+
 export interface HomeworkDto {
   id: string;
   student_id: string;
@@ -23,6 +28,12 @@ export interface HomeworkDto {
   ai_comment?: string | null;
   teacher_grade?: number | null;
   status: 'pending' | 'ai_reviewed' | 'teacher_reviewed';
+  // Результаты пайплайна проверки
+  ocr_text?: string | null;
+  text_unique?: number | null;
+  plagiarism_sources?: PlagiarismSourceDto[];
+  ai_probability?: number | null;
+  ai_detector_reason?: string | null;
 }
 
 export interface ClassDto {

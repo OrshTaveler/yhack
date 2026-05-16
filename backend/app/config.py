@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     api_prefix: str = "/api"
 
+    # Yandex AI Studio (Vision OCR, YandexGPT)
+    yandex_api_key: str = ""
+    yandex_folder_id: str = ""
+
+    # text.ru — антиплагиат
+    textru_userkey: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

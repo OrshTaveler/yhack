@@ -49,6 +49,19 @@ def get_presigned_url(bucket: str, object_key: str, expires_hours: int = 24) -> 
     return client.presigned_get_object(bucket, object_key, expires=timedelta(hours=expires_hours))
 
 
+def download_file(bucket: str, object_key: str) -> bytes:
+    """Скачивает файл из MinIO и возвращает его байты."""
+    client = get_minio_client()
+    response = None
+    try:
+        response = client.get_object(bucket, object_key)
+        return response.read()
+    finally:
+        if response is not None:
+            response.close()
+            response.release_conn()
+
+
 def delete_object(bucket: str, object_key: str) -> None:
     client = get_minio_client()
     try:

@@ -32,6 +32,17 @@ class HomeworkSubmission(Base):
     teacher_grade: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+    # Распознанный текст (Vision OCR)
+    ocr_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Антиплагиат (text.ru)
+    text_unique: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    plagiarism_sources: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
+
+    # AI-детектор (YandexGPT)
+    ai_probability: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    ai_detector_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
     student: Mapped["User"] = relationship(
         back_populates="homework_submissions",
         foreign_keys=[student_id],
