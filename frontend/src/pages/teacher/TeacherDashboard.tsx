@@ -15,19 +15,21 @@ export function TeacherDashboard() {
         description="Проверка работ, анализ дисциплины и статистика по классам"
       />
       <AsyncState loading={loading} error={error}>
-        <div className="stats-row">
-          <StatCard
-            value={data!.pending_homeworks}
-            label="Работ на проверке"
-            unit="шт."
-          />
-          <StatCard value={data!.classes_count} label="Моих классов" unit="шт." />
-          <StatCard
-            value={data!.average_grade || '—'}
-            label="Средний балл"
-            unit="по шкале 2–5"
-          />
-        </div>
+        {data && (
+          <div className="stats-row">
+            <StatCard
+              value={data.pending_homeworks}
+              label="Работ на проверке"
+              unit="шт."
+            />
+            <StatCard value={data.classes_count} label="Моих классов" unit="шт." />
+            <StatCard
+              value={data.average_grade || '—'}
+              label="Средний балл"
+              unit="по шкале 2–5"
+            />
+          </div>
+        )}
       </AsyncState>
       <div className="dashboard-grid">
         <Link to="/teacher/homework" className="dashboard-tile">

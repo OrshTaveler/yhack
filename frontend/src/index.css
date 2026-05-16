@@ -1019,3 +1019,126 @@ select {
   cursor: pointer;
   text-decoration: underline;
 }
+
+/* ===== Анализ урока: шум ===== */
+
+.noise-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 160px;
+  padding: 0.5rem 0;
+}
+
+.noise-bar {
+  flex: 1;
+  min-width: 3px;
+  border-radius: 2px 2px 0 0;
+  transition: height 0.2s;
+}
+
+.noise-bar--quiet {
+  background: #22c55e;
+}
+
+.noise-bar--normal {
+  background: #f59e0b;
+}
+
+.noise-bar--loud {
+  background: #ef4444;
+}
+
+.noise-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.noise-legend span {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot--quiet {
+  background: #22c55e;
+}
+
+.dot--normal {
+  background: #f59e0b;
+}
+
+.dot--loud {
+  background: #ef4444;
+}
+
+/* Живой индикатор шума */
+.noise-live {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: #f1f5f9;
+  border: 3px solid #cbd5e1;
+}
+
+.noise-live--quiet {
+  background: #dcfce7;
+  border-color: #22c55e;
+}
+
+.noise-live--normal {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.noise-live--loud {
+  background: #fee2e2;
+  border-color: #ef4444;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.noise-live__value {
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.noise-live__unit {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.noise-live__label {
+  margin-top: 0.4rem;
+  font-weight: 600;
+}
+
+.bullet-list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.bullet-list li {
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+}

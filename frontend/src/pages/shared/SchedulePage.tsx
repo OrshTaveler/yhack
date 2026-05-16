@@ -21,7 +21,7 @@ export function SchedulePage() {
           empty={!data?.slots.length}
           emptyText="Расписание пока пустое. Директор может сгенерировать его в разделе «Генерация расписания»."
         >
-          <ScheduleGrid slots={data!.slots} />
+          {data && <ScheduleGrid slots={data.slots} />}
         </AsyncState>
       </PlaceholderCard>
     </div>
