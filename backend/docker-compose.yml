@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: teacher
       POSTGRES_DB: teacher_assistant
     ports:
-      - "5432:5432"
+      - "5433:5432"   # 5433 на хосте — 5432 часто занят (например ydbd)
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

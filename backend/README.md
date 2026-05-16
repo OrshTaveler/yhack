@@ -19,6 +19,15 @@ docker compose up -d
 cp .env.example .env
 ```
 
+PostgreSQL в Docker слушает порт **5433** на хосте (не 5432 — он часто занят, например `ydbd`).
+
+Если меняли `docker-compose.yml`, пересоздайте контейнеры:
+
+```bash
+docker compose down
+docker compose up -d
+```
+
 ### 2. Python-окружение
 
 Требуется **Python 3.9+** (рекомендуется 3.11+).
@@ -31,9 +40,21 @@ pip install -r requirements.txt
 
 ### 3. Запуск API
 
+Запускайте из папки **`backend/`**, не из `backend/app/`:
+
+```bash
+cd backend          # важно: корень backend
+source .venv/bin/activate
+python3 run.py
+```
+
+Или через uvicorn:
+
 ```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+> `python3 app/main.py` **не работает** — модуль `app` ищется относительно корня `backend/`.
 
 - API: http://localhost:8000
 - Swagger: http://localhost:8000/docs

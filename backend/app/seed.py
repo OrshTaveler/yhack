@@ -37,7 +37,7 @@ def seed_demo_data(db: Session) -> None:
         db.commit()
         return
 
-    class_5a = ClassGroup(name="5А", grade=5)
+    class_5a = ClassGroup(name="5А", grade=5, students_count=25)
     db.add(class_5a)
     db.flush()
 

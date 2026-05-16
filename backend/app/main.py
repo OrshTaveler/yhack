@@ -7,13 +7,16 @@ from app.api.router import api_router
 from app.config import get_settings
 from app.database import Base, engine
 from app import models  # noqa: F401 — register models
+from app.db_startup import ensure_schema_updates, wait_for_db
 from app.services.storage import ensure_buckets
 from app.seed import seed_demo_data
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    wait_for_db()
     Base.metadata.create_all(bind=engine)
+    ensure_schema_updates()
     try:
         ensure_buckets()
     except Exception:

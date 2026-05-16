@@ -9,6 +9,7 @@ class ClassOut(BaseModel):
     id: UUID
     name: str
     grade: int
+    students_count: int
     teacher_id: UUID | None = None
     teacher_name: str | None = None
 

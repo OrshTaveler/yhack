@@ -28,4 +28,4 @@ class HomeworkListResponse(BaseModel):
 
 
 class GradeUpdateRequest(BaseModel):
-    grade: float = Field(ge=1, le=5)
+    grade: float = Field(ge=2, le=5)

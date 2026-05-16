@@ -85,7 +85,10 @@ def generate(
     _: User = Depends(require_roles(UserRole.director)),
     db: Session = Depends(get_db),
 ) -> ScheduleResponse:
-    generate_schedule(db, payload)
+    try:
+        generate_schedule(db, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     loaded = (
         db.query(ScheduleSlot)
         .options(

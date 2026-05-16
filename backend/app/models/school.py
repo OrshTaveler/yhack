@@ -15,6 +15,7 @@ class ClassGroup(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     grade: Mapped[int] = mapped_column(Integer, nullable=False)
+    students_count: Mapped[int] = mapped_column(Integer, nullable=False, default=25)
 
     teacher_assignments: Mapped[list["ClassTeacherAssignment"]] = relationship(back_populates="class_group")
     enrollments: Mapped[list["StudentEnrollment"]] = relationship(back_populates="class_group")

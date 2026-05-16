@@ -24,8 +24,8 @@ class ScheduleResponse(BaseModel):
 
 
 class ClassInput(BaseModel):
-    name: str
-    grade: int = Field(ge=1, le=11)
+    name: str = Field(min_length=1, max_length=50)
+    students_count: int = Field(ge=5, le=30)
 
 
 class SubjectHoursInput(BaseModel):

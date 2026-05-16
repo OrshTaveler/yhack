@@ -1,3 +1,15 @@
+import type {
+  ClassDto,
+  HomeworkDto,
+  NoiseSessionDto,
+  ScheduleGeneratePayload,
+  ScheduleSlotDto,
+  StudentGradeDto,
+  SubjectDto,
+  TeacherStatsDto,
+  UserDto,
+} from './types';
+
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 const TOKEN_KEY = 'access_token';
 
@@ -15,8 +27,7 @@ export function setStoredToken(token: string | null): void {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getStoredToken();
-  const headers: Record<string, string> = {
-  };
+  const headers: Record<string, string> = {};
   if (!(options?.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
@@ -83,17 +94,18 @@ export const api = {
     me: () => request<AuthUser>('/auth/me'),
   },
   schedule: {
-    getMy: () => request<{ slots: unknown[] }>('/schedule/me'),
-    getForUser: (userId: string) => request<{ slots: unknown[] }>(`/schedule/user/${userId}`),
-    generate: (payload: unknown) =>
-      request<{ slots: unknown[] }>('/schedule/generate', {
+    getMy: () => request<{ slots: ScheduleSlotDto[] }>('/schedule/me'),
+    getForUser: (userId: string) =>
+      request<{ slots: ScheduleSlotDto[] }>(`/schedule/user/${userId}`),
+    generate: (payload: ScheduleGeneratePayload) =>
+      request<{ slots: ScheduleSlotDto[] }>('/schedule/generate', {
         method: 'POST',
         body: JSON.stringify(payload),
       }),
   },
   homework: {
-    listForTeacher: () => request<{ items: unknown[] }>('/homework/teacher'),
-    listMy: () => request<{ items: unknown[] }>('/homework/my'),
+    listForTeacher: () => request<{ items: HomeworkDto[] }>('/homework/teacher'),
+    listMy: () => request<{ items: HomeworkDto[] }>('/homework/my'),
     upload: (formData: FormData) => {
       const token = getStoredToken();
       return fetch(`${API_BASE}/homework/upload`, {
@@ -105,18 +117,18 @@ export const api = {
           const err = await res.json().catch(() => ({}));
           throw new Error((err as { detail?: string }).detail ?? `Upload failed: ${res.status}`);
         }
-        return res.json();
+        return res.json() as Promise<HomeworkDto>;
       });
     },
     confirmGrade: (id: string, grade: number) =>
-      request<unknown>(`/homework/${id}/grade`, {
+      request<HomeworkDto>(`/homework/${id}/grade`, {
         method: 'PATCH',
         body: JSON.stringify({ grade }),
       }),
   },
   noise: {
     startSession: (classId: string, subjectId: string) =>
-      request<unknown>('/noise/sessions', {
+      request<NoiseSessionDto>('/noise/sessions', {
         method: 'POST',
         body: JSON.stringify({ class_id: classId, subject_id: subjectId }),
       }),
@@ -131,23 +143,35 @@ export const api = {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: form,
       }).then(async (res) => {
-        if (!res.ok) throw new Error(`Stop failed: ${res.status}`);
-        return res.json();
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { detail?: string }).detail ?? `Stop failed: ${res.status}`);
+        }
+        return res.json() as Promise<NoiseSessionDto>;
       });
     },
-    getReport: (sessionId: string) => request<unknown>(`/noise/sessions/${sessionId}/report`),
-    listLessonStats: () => request<{ items: unknown[] }>('/noise/lessons'),
+    getReport: (sessionId: string) =>
+      request<NoiseSessionDto>(`/noise/sessions/${sessionId}/report`),
+    listLessonStats: () => request<{ items: NoiseSessionDto[] }>('/noise/lessons'),
   },
   classes: {
-    list: () => request<{ items: unknown[] }>('/classes'),
+    list: () => request<{ items: ClassDto[] }>('/classes'),
     assignTeacher: (classId: string, teacherId: string) =>
-      request<unknown>(`/classes/${classId}/teacher`, {
+      request<ClassDto>(`/classes/${classId}/teacher`, {
         method: 'PUT',
         body: JSON.stringify({ teacher_id: teacherId }),
       }),
   },
+  subjects: {
+    list: () => request<{ items: SubjectDto[] }>('/subjects'),
+  },
+  users: {
+    list: (role?: 'teacher' | 'student') =>
+      request<{ items: UserDto[] }>(role ? `/users?role=${role}` : '/users'),
+  },
   stats: {
-    teacherOverview: () => request<unknown>('/stats/teacher'),
-    studentGrades: (classId: string) => request<unknown>(`/stats/class/${classId}/grades`),
+    teacherOverview: () => request<TeacherStatsDto>('/stats/teacher'),
+    studentGrades: (classId: string) =>
+      request<{ items: StudentGradeDto[] }>(`/stats/class/${classId}/grades`),
   },
 };

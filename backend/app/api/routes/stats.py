@@ -42,9 +42,10 @@ def teacher_overview(
         cg = db.get(ClassGroup, class_id)
         if cg is None:
             continue
-        students_count = (
+        enrolled = (
             db.query(StudentEnrollment).filter(StudentEnrollment.class_id == class_id).count()
         )
+        students_count = cg.students_count if cg else enrolled
         pending = (
             db.query(HomeworkSubmission)
             .filter(

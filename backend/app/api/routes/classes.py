@@ -17,7 +17,7 @@ router = APIRouter(prefix="/classes", tags=["classes"])
 
 @router.get("", response_model=ClassListResponse)
 def list_classes(
-    _: User = Depends(require_roles(UserRole.director, UserRole.teacher)),
+    _: User = Depends(require_roles(UserRole.director, UserRole.teacher, UserRole.student)),
     db: Session = Depends(get_db),
 ) -> ClassListResponse:
     classes = db.query(ClassGroup).all()
@@ -34,6 +34,7 @@ def list_classes(
                 id=cg.id,
                 name=cg.name,
                 grade=cg.grade,
+                students_count=cg.students_count,
                 teacher_id=teacher.id if teacher else None,
                 teacher_name=teacher.full_name if teacher else None,
             )
@@ -71,6 +72,7 @@ def assign_teacher(
         id=cg.id,
         name=cg.name,
         grade=cg.grade,
+        students_count=cg.students_count,
         teacher_id=teacher.id,
         teacher_name=teacher.full_name,
     )

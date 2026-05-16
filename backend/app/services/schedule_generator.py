@@ -10,14 +10,17 @@ from sqlalchemy.orm import Session
 from app.models.schedule import ClassSubjectHours, ScheduleSlot
 from app.models.school import ClassGroup, Subject
 from app.schemas.schedule import ClassInput, ScheduleGenerateRequest, SubjectHoursInput
+from app.utils.class_name import parse_grade_from_class_name
 
 
 def _get_or_create_class(db: Session, item: ClassInput) -> ClassGroup:
+    grade = parse_grade_from_class_name(item.name)
     existing = db.query(ClassGroup).filter(ClassGroup.name == item.name).first()
     if existing:
-        existing.grade = item.grade
+        existing.grade = grade
+        existing.students_count = item.students_count
         return existing
-    group = ClassGroup(name=item.name, grade=item.grade)
+    group = ClassGroup(name=item.name.strip(), grade=grade, students_count=item.students_count)
     db.add(group)
     db.flush()
     return group

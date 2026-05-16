@@ -1,27 +1,34 @@
 import { Link } from 'react-router-dom';
+import { api } from '@/api/client';
+import { AsyncState } from '@/components/common/AsyncState';
 import { PageHeader } from '@/components/common/PageHeader';
+import { StatCard } from '@/components/common/StatCard';
+import { useFetch } from '@/hooks/useFetch';
 
 export function TeacherDashboard() {
+  const { data, loading, error } = useFetch(() => api.stats.teacherOverview(), []);
+
   return (
     <div className="page">
       <PageHeader
         title="Кабинет учителя"
         description="Проверка работ, анализ дисциплины и статистика по классам"
       />
-      <div className="stats-row">
-        <div className="stat-card">
-          <span className="stat-card__value">—</span>
-          <span className="stat-card__label">Работ на проверке</span>
+      <AsyncState loading={loading} error={error}>
+        <div className="stats-row">
+          <StatCard
+            value={data!.pending_homeworks}
+            label="Работ на проверке"
+            unit="шт."
+          />
+          <StatCard value={data!.classes_count} label="Моих классов" unit="шт." />
+          <StatCard
+            value={data!.average_grade || '—'}
+            label="Средний балл"
+            unit="по шкале 2–5"
+          />
         </div>
-        <div className="stat-card">
-          <span className="stat-card__value">—</span>
-          <span className="stat-card__label">Моих классов</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-card__value">—</span>
-          <span className="stat-card__label">Средний балл</span>
-        </div>
-      </div>
+      </AsyncState>
       <div className="dashboard-grid">
         <Link to="/teacher/homework" className="dashboard-tile">
           <h3>Проверка домашних работ</h3>
