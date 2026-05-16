@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Базы данных (локальные)
+*.db
+*.sqlite
+*.sqlite3
+
+# Окружение
+.env
+.env.local
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

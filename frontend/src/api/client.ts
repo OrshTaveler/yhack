@@ -5,6 +5,7 @@ import type {
   ScheduleGeneratePayload,
   ScheduleSlotDto,
   StudentGradeDto,
+  StudentProfileDto,
   SubjectDto,
   TeacherStatsDto,
   UserDto,
@@ -173,5 +174,10 @@ export const api = {
     teacherOverview: () => request<TeacherStatsDto>('/stats/teacher'),
     studentGrades: (classId: string) =>
       request<{ items: StudentGradeDto[] }>(`/stats/class/${classId}/grades`),
+  },
+  profile: {
+    me: () => request<StudentProfileDto>('/profile/me'),
+    byStudent: (studentId: string) =>
+      request<StudentProfileDto>(`/profile/student/${studentId}`),
   },
 };

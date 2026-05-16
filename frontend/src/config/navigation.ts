@@ -23,6 +23,7 @@ export const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
   ],
   student: [
     { to: '/student', label: 'Обзор', end: true },
+    { to: '/student/profile', label: 'Мой профиль' },
     { to: '/student/homework', label: 'Домашние задания' },
     { to: '/student/grades', label: 'Мои оценки' },
     { to: '/schedule', label: 'Расписание' },

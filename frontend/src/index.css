@@ -842,3 +842,122 @@ select {
   padding: 0.1rem 0.3rem;
   border-radius: 4px;
 }
+
+/* ===== Профиль ученика ===== */
+
+.progress-chart {
+  width: 100%;
+  height: auto;
+  margin: 0.5rem 0;
+}
+
+.profile-highlight {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.profile-highlight--strong {
+  color: #15803d;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.chip {
+  display: inline-block;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #e2e8f0;
+}
+
+.chip--weak {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.subject-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .subject-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.subject-card {
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  border-left: 4px solid #cbd5e1;
+  background: #fff;
+}
+
+.subject-card--weak {
+  border-left-color: #ef4444;
+}
+
+.subject-card--normal {
+  border-left-color: #f59e0b;
+}
+
+.subject-card--strong {
+  border-left-color: #22c55e;
+}
+
+.subject-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.subject-card__head h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.subject-card__grade {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.badge--weak {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.badge--normal {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.badge--strong {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.list__item--column {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.list__item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.profile-comment {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+}

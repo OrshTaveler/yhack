@@ -17,6 +17,7 @@ import { ClassStatisticsPage } from '@/pages/teacher/ClassStatisticsPage';
 import { StudentDashboard } from '@/pages/student/StudentDashboard';
 import { HomeworkUploadPage } from '@/pages/student/HomeworkUploadPage';
 import { MyGradesPage } from '@/pages/student/MyGradesPage';
+import { StudentProfilePage } from '@/pages/student/StudentProfilePage';
 
 function HomeRedirect() {
   return <Navigate to="/login" replace />;
@@ -54,6 +55,7 @@ export function AppRoutes() {
 
               <Route element={<RoleGuard allowed={['student']} />}>
                 <Route path="/student" element={<StudentDashboard />} />
+                <Route path="/student/profile" element={<StudentProfilePage />} />
                 <Route path="/student/homework" element={<HomeworkUploadPage />} />
                 <Route path="/student/grades" element={<MyGradesPage />} />
               </Route>

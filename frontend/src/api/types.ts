@@ -94,3 +94,43 @@ export interface ScheduleGeneratePayload {
   periods_per_day?: number;
   days_per_week?: number;
 }
+
+export type SubjectLevel = 'weak' | 'normal' | 'strong';
+
+export interface SubjectProgressDto {
+  subject_id: string;
+  subject_name: string;
+  average_grade: number;
+  works_count: number;
+  last_grade?: number | null;
+  level: SubjectLevel;
+}
+
+export interface ProgressPointDto {
+  date: string;
+  grade: number;
+  subject_name: string;
+}
+
+export interface RecentWorkDto {
+  id: string;
+  subject_name: string;
+  submitted_at: string;
+  grade?: number | null;
+  status: 'pending' | 'ai_reviewed' | 'teacher_reviewed';
+  ai_comment?: string | null;
+}
+
+export interface StudentProfileDto {
+  student_id: string;
+  student_name: string;
+  class_name?: string | null;
+  total_works: number;
+  checked_works: number;
+  average_grade: number;
+  best_subject?: string | null;
+  weak_subjects: string[];
+  subjects: SubjectProgressDto[];
+  progress_timeline: ProgressPointDto[];
+  recent_works: RecentWorkDto[];
+}

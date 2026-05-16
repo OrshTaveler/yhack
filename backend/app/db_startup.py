@@ -32,6 +32,10 @@ def wait_for_db(max_attempts: int = 30, delay_sec: float = 1.0) -> None:
 
 def ensure_schema_updates() -> None:
     """Добавляет новые колонки в существующую БД (без Alembic)."""
+    # Skip for SQLite - it doesn't support IF NOT EXISTS in ALTER TABLE
+    if "sqlite" in str(engine.url):
+        return
+
     with engine.begin() as conn:
         conn.execute(
             text(

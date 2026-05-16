@@ -9,6 +9,10 @@ export function StudentDashboard() {
         description="Загрузка домашних работ и просмотр оценок"
       />
       <div className="dashboard-grid">
+        <Link to="/student/profile" className="dashboard-tile">
+          <h3>Мой профиль</h3>
+          <p>Прогресс, сильные и слабые темы, история работ</p>
+        </Link>
         <Link to="/student/homework" className="dashboard-tile">
           <h3>Домашние задания</h3>
           <p>Загрузите фото работы — ИИ проверит и отправит учителю</p>
