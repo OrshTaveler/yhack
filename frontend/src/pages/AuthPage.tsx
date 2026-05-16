@@ -8,17 +8,25 @@ import type { UserRole } from '@/types';
 type AuthTab = 'login' | 'register';
 
 export function AuthPage() {
-  const { user, login, register } = useAuth();
+  const { user, loading: authLoading, login, register } = useAuth();
   const location = useLocation();
   const initialTab: AuthTab = location.pathname === '/register' ? 'register' : 'login';
   const [tab, setTab] = useState<AuthTab>(initialTab);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setTab(location.pathname === '/register' ? 'register' : 'login');
     setError(null);
   }, [location.pathname]);
+
+  if (authLoading) {
+    return (
+      <div className="auth-page">
+        <p className="muted">Загрузка…</p>
+      </div>
+    );
+  }
 
   if (user) {
     return <Navigate to={homePathForRole(user.role)} replace />;
@@ -72,39 +80,39 @@ export function AuthPage() {
 
         {tab === 'login' ? (
           <LoginForm
-            loading={loading}
+            submitting={submitting}
             onSubmit={async (email, password) => {
-              setLoading(true);
+              setSubmitting(true);
               setError(null);
               try {
                 await login(email, password);
               } catch (e) {
                 setError(e instanceof Error ? e.message : 'Ошибка входа');
               } finally {
-                setLoading(false);
+                setSubmitting(false);
               }
             }}
           />
         ) : (
           <RegisterForm
-            loading={loading}
+            submitting={submitting}
             onError={setError}
             onSubmit={async (data) => {
-              setLoading(true);
+              setSubmitting(true);
               setError(null);
               try {
                 await register(data);
               } catch (e) {
                 setError(e instanceof Error ? e.message : 'Ошибка регистрации');
               } finally {
-                setLoading(false);
+                setSubmitting(false);
               }
             }}
           />
         )}
 
         <details className="auth-demo">
-          <summary>Демо-аккаунты для входа</summary>
+          <summary>Демо-аккаунты (создаются при первом запуске бэкенда)</summary>
           <ul className="auth-demo__list">
             {MOCK_ACCOUNTS.map((a) => (
               <li key={a.email}>
@@ -120,10 +128,10 @@ export function AuthPage() {
 }
 
 function LoginForm({
-  loading,
+  submitting,
   onSubmit,
 }: {
-  loading: boolean;
+  submitting: boolean;
   onSubmit: (email: string, password: string) => Promise<void>;
 }) {
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -156,19 +164,19 @@ function LoginForm({
           placeholder="••••••••"
         />
       </label>
-      <button type="submit" className="btn btn--primary btn--block" disabled={loading}>
-        {loading ? 'Вход…' : 'Войти'}
+      <button type="submit" className="btn btn--primary btn--block" disabled={submitting}>
+        {submitting ? 'Вход…' : 'Войти'}
       </button>
     </form>
   );
 }
 
 function RegisterForm({
-  loading,
+  submitting,
   onError,
   onSubmit,
 }: {
-  loading: boolean;
+  submitting: boolean;
   onError: (msg: string | null) => void;
   onSubmit: (data: {
     name: string;
@@ -242,8 +250,8 @@ function RegisterForm({
           autoComplete="new-password"
         />
       </label>
-      <button type="submit" className="btn btn--primary btn--block" disabled={loading}>
-        {loading ? 'Регистрация…' : 'Зарегистрироваться'}
+      <button type="submit" className="btn btn--primary btn--block" disabled={submitting}>
+        {submitting ? 'Регистрация…' : 'Зарегистрироваться'}
       </button>
     </form>
   );
