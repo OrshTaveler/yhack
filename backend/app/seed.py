@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import HomeworkStatus, UserRole
 from app.core.security import hash_password
+from app.data.subject_knowledge import KNOWLEDGE_BY_SUBJECT
 from app.models.homework import HomeworkSubmission
+from app.models.knowledge import SubjectKnowledgeFact
 from app.models.school import ClassGroup, ClassTeacherAssignment, StudentEnrollment, Subject
 from app.models.user import User
 
@@ -43,6 +45,32 @@ DEMO_HOMEWORKS = [
 ]
 
 
+def seed_knowledge_facts(db: Session) -> None:
+    """Идемпотентно заполняет базу знаний по предметам."""
+    for subject_name, facts in KNOWLEDGE_BY_SUBJECT.items():
+        subject = db.query(Subject).filter(Subject.name == subject_name).first()
+        if subject is None:
+            continue
+        existing_count = (
+            db.query(SubjectKnowledgeFact)
+            .filter(SubjectKnowledgeFact.subject_id == subject.id)
+            .count()
+        )
+        if existing_count > 0:
+            continue
+        for topic, content, grade_from, grade_to, sort_order in facts:
+            db.add(
+                SubjectKnowledgeFact(
+                    subject_id=subject.id,
+                    topic=topic,
+                    content=content,
+                    grade_from=grade_from,
+                    grade_to=grade_to,
+                    sort_order=sort_order,
+                )
+            )
+
+
 def seed_demo_data(db: Session) -> None:
     users: dict[str, User] = {}
     for email, password, name, role in DEMO_USERS:
@@ -61,6 +89,7 @@ def seed_demo_data(db: Session) -> None:
         users[role.value] = user
 
     if db.query(ClassGroup).first():
+        seed_knowledge_facts(db)
         db.commit()
         return
 
@@ -107,4 +136,5 @@ def seed_demo_data(db: Session) -> None:
                 )
             )
 
+    seed_knowledge_facts(db)
     db.commit()

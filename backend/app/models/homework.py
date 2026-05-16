@@ -29,6 +29,7 @@ class HomeworkSubmission(Base):
     )
     ai_grade: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     ai_comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    ai_prompt_snapshot: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     teacher_grade: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

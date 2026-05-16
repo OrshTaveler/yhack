@@ -31,6 +31,10 @@ class Subject(Base):
 
     schedule_slots: Mapped[list["ScheduleSlot"]] = relationship(back_populates="subject")
     subject_hours: Mapped[list["ClassSubjectHours"]] = relationship(back_populates="subject")
+    knowledge_facts: Mapped[list["SubjectKnowledgeFact"]] = relationship(
+        back_populates="subject",
+        order_by="SubjectKnowledgeFact.sort_order",
+    )
 
 
 class ClassTeacherAssignment(Base):

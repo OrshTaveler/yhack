@@ -150,6 +150,8 @@ async def upload_homework(
         status=HomeworkStatus.pending,
     )
     db.add(submission)
+    db.flush()
+    run_ai_review(submission, db)
     db.commit()
     db.refresh(submission)
 

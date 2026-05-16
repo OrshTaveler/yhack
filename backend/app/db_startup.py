@@ -43,3 +43,9 @@ def ensure_schema_updates() -> None:
                 "ADD COLUMN IF NOT EXISTS students_count INTEGER NOT NULL DEFAULT 25"
             )
         )
+        conn.execute(
+            text(
+                "ALTER TABLE homework_submissions "
+                "ADD COLUMN IF NOT EXISTS ai_prompt_snapshot TEXT"
+            )
+        )

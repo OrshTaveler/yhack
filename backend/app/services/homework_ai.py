@@ -23,6 +23,7 @@ from app.services.storage import download_file
 logger = logging.getLogger(__name__)
 
 
+<<<<<<< HEAD
 def _build_comment(unique: float, ai_prob: float) -> str:
     """Краткая сводка по результатам проверки."""
     parts = [f"Антиплагиат: {plagiarism.verdict(unique)} ({unique:.0f}% уникальности)."]
