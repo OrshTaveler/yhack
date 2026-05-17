@@ -10,6 +10,7 @@ from app.api.routes import (
     stats,
     subjects,
     users,
+    lesson_report_yandex,
 )
 
 api_router = APIRouter()
@@ -22,3 +23,4 @@ api_router.include_router(classes.router)
 api_router.include_router(stats.router)
 api_router.include_router(users.router)
 api_router.include_router(subjects.router)
+api_router.include_router(lesson_report_yandex.router)

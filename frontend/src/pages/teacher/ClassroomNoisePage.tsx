@@ -4,6 +4,7 @@ import { PlaceholderCard } from '@/components/common/PlaceholderCard';
 import { StatCard } from '@/components/common/StatCard';
 
 const VOICE_RECOGNITION_URL = 'http://localhost:8001/recognize-voice';
+const LESSON_REPORT_URL = 'http://localhost:8000/api/lesson-report';
 const AUDIO_BUFFER_MS = 5000;
 const AUDIO_SEND_INTERVAL_MS = 1000;
 const WAV_CHANNELS = 1;
@@ -75,6 +76,11 @@ type TimelineMinuteWindow = {
   teacher_speaking_percent: number;
   teacher_transcript: string;
   samples_count: number;
+};
+
+type LessonReportResponse = {
+  report: string;
+  raw_response?: unknown;
 };
 
 function buildTimelineJson(
@@ -228,6 +234,26 @@ function calculateRms(samples: Float32Array) {
   return Math.sqrt(sum / samples.length);
 }
 
+async function requestYandexLessonReport(timelineJson: TimelineMinuteWindow[]) {
+  const response = await fetch(LESSON_REPORT_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      timeline: timelineJson,
+    }),
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || 'Не удалось получить итог урока');
+  }
+
+  const data = (await response.json()) as LessonReportResponse;
+  return data.report || 'Отчёт пока пустой.';
+}
+
 async function sendWavChunk(base64: string, sampleRate: number) {
   const response = await fetch(VOICE_RECOGNITION_URL, {
     method: 'POST',
@@ -303,6 +329,9 @@ export function ClassroomNoisePage() {
   const [lastResult, setLastResult] = useState<VoiceRecognitionResponse | null>(null);
   const [noisePoints, setNoisePoints] = useState<NoisePoint[]>([]);
   const [lessonTimelineJson, setLessonTimelineJson] = useState<TimelineMinuteWindow[]>([]);
+  const [yandexReport, setYandexReport] = useState<string | null>(null);
+  const [yandexReportLoading, setYandexReportLoading] = useState(false);
+  const [yandexReportError, setYandexReportError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -356,6 +385,25 @@ export function ClassroomNoisePage() {
 
     setLessonTimelineJson(timelineJson);
     console.log('Lesson timeline JSON:', timelineJson);
+  };
+
+  const requestFinalYandexReport = async (timelineJson: TimelineMinuteWindow[]) => {
+    setYandexReportLoading(true);
+    setYandexReportError(null);
+    setYandexReport(null);
+
+    try {
+      const report = await requestYandexLessonReport(timelineJson);
+      setYandexReport(report);
+      console.log('YandexGPT lesson report:', report);
+    } catch (e) {
+      console.error('Failed to request YandexGPT lesson report:', e);
+      setYandexReportError(
+        e instanceof Error ? e.message : 'Не удалось получить итог от YandexGPT',
+      );
+    } finally {
+      setYandexReportLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -505,6 +553,9 @@ export function ClassroomNoisePage() {
     setLastResult(null);
     setNoisePoints([]);
     setLessonTimelineJson([]);
+    setYandexReport(null);
+    setYandexReportError(null);
+    setYandexReportLoading(false);
     lessonStartedAtRef.current = Date.now();
     timelineEventsRef.current = [];
     audioBufferRef.current = [];
@@ -527,8 +578,11 @@ export function ClassroomNoisePage() {
 
     try {
       await stopMicrophone();
-      setLessonTimelineJson(buildTimelineJson(timelineEventsRef.current, lessonStartedAtRef.current));
+      const timelineJson = buildTimelineJson(timelineEventsRef.current, lessonStartedAtRef.current);
+      setLessonTimelineJson(timelineJson);
       setPhase('report');
+      // По окончании прослушивания отправляем JSON таймлайна на backend. Backend сам сделает запрос к YandexGPT.
+      void requestFinalYandexReport(timelineJson);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось завершить анализ');
     } finally {
@@ -544,6 +598,9 @@ export function ClassroomNoisePage() {
     setLastResult(null);
     setNoisePoints([]);
     setLessonTimelineJson([]);
+    setYandexReport(null);
+    setYandexReportError(null);
+    setYandexReportLoading(false);
     lessonStartedAtRef.current = null;
     timelineEventsRef.current = [];
     audioBufferRef.current = [];
@@ -657,6 +714,19 @@ export function ClassroomNoisePage() {
                 Для отчёта нет подходящих точек: все полученные отрезки были исключены из
                 статистики или запись была слишком короткой.
               </p>
+            )}
+          </PlaceholderCard>
+
+          <PlaceholderCard title="Итог от YandexGPT">
+            {yandexReportLoading && <p className="muted">Формируется итог урока…</p>}
+            {yandexReportError && <div className="auth-alert">{yandexReportError}</div>}
+            {yandexReport ? (
+              <p style={{ whiteSpace: 'pre-wrap' }}>{yandexReport}</p>
+            ) : (
+              !yandexReportLoading &&
+              !yandexReportError && (
+                <p className="muted">Итог появится после обработки таймлайна урока.</p>
+              )
             )}
           </PlaceholderCard>
 
