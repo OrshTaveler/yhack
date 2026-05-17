@@ -15,7 +15,8 @@ from app.services.knowledge import format_chunks_context
 
 logger = logging.getLogger(__name__)
 
-LLM_API_BASE = "https://llm.api.cloud.yandex.net/v1"
+# Responses API (file_search / vector stores) живёт на ai.api, не llm.api
+LLM_API_BASE = "https://ai.api.cloud.yandex.net/v1"
 SEARCH_RESPONSES_URL = f"{LLM_API_BASE}/responses"
 
 SEARCH_RETRY_ATTEMPTS = 3

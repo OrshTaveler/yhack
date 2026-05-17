@@ -72,7 +72,6 @@ def generate_schedule(db: Session, payload: ScheduleGenerateRequest) -> list[Sch
         random.shuffle(lessons)
         for subject_id, _ in lessons:
             placed = False
-            attempts = days * periods
             random.shuffle(days)
             for day in days:
                 for period in periods:

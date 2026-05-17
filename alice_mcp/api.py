@@ -75,25 +75,30 @@ def decode_wav_base64(audio_base64: str) -> tuple[np.ndarray, int]:
     return audio, sample_rate
 
 
+class TranscribeRequest(BaseModel):
+    audio_data: str
+    sample_rate: int = 16000
+
+
+class TranscribeResponse(BaseModel):
+    transcript: str
+    ok: bool
+
+
 @app.post("/recognize-voice", response_model=VoiceRecognitionResponse)
 async def recognize_voice(request: VoiceRecognitionRequest):
+    """Живой анализ чанка: уровень шума + говорит ли учитель.
+
+    STT здесь НЕ делаем — Whisper на каждом 1-сек чанке тормозит цикл.
+    Полная расшифровка урока — отдельным вызовом /transcribe в конце.
+    """
     try:
-        audio_chunk, sample_rate = decode_wav_base64(request.audio_data)
+        audio_chunk, _ = decode_wav_base64(request.audio_data)
 
         result = detector.process_audio(audio_chunk)
 
-        print("DETECTOR RESULT:", result)
-
         if result is None:
             raise HTTPException(status_code=400, detail="No voice detected")
-
-        if result["sampled_person_speaking"]:
-            transcript = transcriber.transcribe_audio(
-                audio_chunk,
-                sample_rate=sample_rate,
-            )
-        else:
-            transcript = ""
 
         return VoiceRecognitionResponse(
             status=result["status"],
@@ -102,10 +107,31 @@ async def recognize_voice(request: VoiceRecognitionRequest):
             current_dbfs=result["current_dbfs"],
             background_noise_dbfs=result.get("background_noise_dbfs"),
             rms=result["rms"],
-            transcript=transcript,
+            transcript="",
         )
 
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/transcribe", response_model=TranscribeResponse)
+async def transcribe(request: TranscribeRequest):
+    """Расшифровка полного аудио урока (вызывается один раз при завершении)."""
+    try:
+        audio, sample_rate = decode_wav_base64(request.audio_data)
+        transcript = transcriber.transcribe_audio(audio, sample_rate=sample_rate)
+        return TranscribeResponse(transcript=transcript, ok=bool(transcript))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+if __name__ == "__main__":
+    # Порт 8001 — фронтенд (ClassroomNoisePage) ждёт сервис именно здесь.
+    # Бэкенд приложения занимает 8000.
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8001)

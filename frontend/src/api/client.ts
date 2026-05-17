@@ -4,6 +4,7 @@ import type {
   NoiseSessionDto,
   ScheduleGeneratePayload,
   ScheduleSlotDto,
+  LessonReportDto,
   StudentGradeDto,
   StudentProfileDto,
   SubjectDto,
@@ -179,5 +180,12 @@ export const api = {
     me: () => request<StudentProfileDto>('/profile/me'),
     byStudent: (studentId: string) =>
       request<StudentProfileDto>(`/profile/student/${studentId}`),
+  },
+  lesson: {
+    analyze: (transcript: string) =>
+      request<LessonReportDto>('/lesson/analyze', {
+        method: 'POST',
+        body: JSON.stringify({ transcript }),
+      }),
   },
 };

@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { api } from '@/api/client';
+import type { LessonReportDto } from '@/api/types';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PlaceholderCard } from '@/components/common/PlaceholderCard';
 import { StatCard } from '@/components/common/StatCard';
 
 const VOICE_RECOGNITION_URL = 'http://localhost:8001/recognize-voice';
+const TRANSCRIBE_URL = 'http://localhost:8001/transcribe';
 const AUDIO_BUFFER_MS = 5000;
 const AUDIO_SEND_INTERVAL_MS = 1000;
 const WAV_CHANNELS = 1;
@@ -248,6 +251,22 @@ async function sendWavChunk(base64: string, sampleRate: number) {
   return response.json() as Promise<VoiceRecognitionResponse>;
 }
 
+// Расшифровка всего урока — один вызов в конце.
+async function transcribeLesson(base64: string, sampleRate: number): Promise<string> {
+  const response = await fetch(TRANSCRIBE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ audio_data: base64, sample_rate: sampleRate }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Сервис распознавания речи недоступен');
+  }
+
+  const data = (await response.json()) as { transcript: string; ok: boolean };
+  return data.transcript ?? '';
+}
+
 // ── Живой индикатор шума во время записи ────────────────
 function LiveIndicator({ dbfs }: { dbfs: number | null }) {
   const value = dbfs ?? -100;
@@ -305,6 +324,8 @@ export function ClassroomNoisePage() {
   const [lessonTimelineJson, setLessonTimelineJson] = useState<TimelineMinuteWindow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [lessonReport, setLessonReport] = useState<LessonReportDto | null>(null);
 
   const timerRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -314,6 +335,8 @@ export function ClassroomNoisePage() {
   const intervalRef = useRef<number | null>(null);
   const audioBufferRef = useRef<Float32Array[]>([]);
   const audioBufferSamplesRef = useRef(0);
+  // Полная запись урока — копится отдельно, для расшифровки в конце.
+  const fullAudioRef = useRef<Float32Array[]>([]);
   const sampleRateRef = useRef<number>(16000);
   const flushingRef = useRef(false);
   const lessonStartedAtRef = useRef<number | null>(null);
@@ -471,6 +494,9 @@ export function ClassroomNoisePage() {
       audioBufferRef.current.push(chunk);
       audioBufferSamplesRef.current += chunk.length;
 
+      // Полная запись урока — для расшифровки речи в конце.
+      fullAudioRef.current.push(chunk);
+
       if (audioBufferSamplesRef.current > maxSamples) {
         const trimmed = trimAudioBufferToLastSamples(audioBufferRef.current, maxSamples);
         audioBufferRef.current = trimmed.chunks;
@@ -505,10 +531,13 @@ export function ClassroomNoisePage() {
     setLastResult(null);
     setNoisePoints([]);
     setLessonTimelineJson([]);
+    setLessonReport(null);
+    setAnalyzing(false);
     lessonStartedAtRef.current = Date.now();
     timelineEventsRef.current = [];
     audioBufferRef.current = [];
     audioBufferSamplesRef.current = 0;
+    fullAudioRef.current = [];
 
     try {
       await startMicrophone();
@@ -521,6 +550,53 @@ export function ClassroomNoisePage() {
     }
   };
 
+  // Расшифровка речи урока + анализ через YandexGPT (упоминания учеников, тезисы, ДЗ).
+  const analyzeLessonRecording = async () => {
+    const chunks = fullAudioRef.current;
+    if (!chunks.length) {
+      setLessonReport({
+        students: [],
+        summary: [],
+        homework: '',
+        ok: false,
+        note: 'Аудио урока не записано.',
+      });
+      return;
+    }
+
+    setAnalyzing(true);
+    try {
+      const samples = mergeAudioChunks(chunks);
+      const wavBuffer = encodeWav(samples, sampleRateRef.current);
+      const base64 = arrayBufferToBase64(wavBuffer);
+
+      const transcript = await transcribeLesson(base64, sampleRateRef.current);
+      if (!transcript.trim()) {
+        setLessonReport({
+          students: [],
+          summary: [],
+          homework: '',
+          ok: false,
+          note: 'Речь учителя не распознана.',
+        });
+        return;
+      }
+
+      const report = await api.lesson.analyze(transcript);
+      setLessonReport(report);
+    } catch (e) {
+      setLessonReport({
+        students: [],
+        summary: [],
+        homework: '',
+        ok: false,
+        note: e instanceof Error ? e.message : 'Анализ урока не выполнен.',
+      });
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
   const stop = async () => {
     setLoading(true);
     setError(null);
@@ -529,6 +605,8 @@ export function ClassroomNoisePage() {
       await stopMicrophone();
       setLessonTimelineJson(buildTimelineJson(timelineEventsRef.current, lessonStartedAtRef.current));
       setPhase('report');
+      // Отчёт по шуму уже готов; расшифровку речи догружаем асинхронно.
+      void analyzeLessonRecording();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось завершить анализ');
     } finally {
@@ -544,10 +622,13 @@ export function ClassroomNoisePage() {
     setLastResult(null);
     setNoisePoints([]);
     setLessonTimelineJson([]);
+    setLessonReport(null);
+    setAnalyzing(false);
     lessonStartedAtRef.current = null;
     timelineEventsRef.current = [];
     audioBufferRef.current = [];
     audioBufferSamplesRef.current = 0;
+    fullAudioRef.current = [];
     setError(null);
     setPhase('idle');
   };
@@ -671,6 +752,78 @@ export function ClassroomNoisePage() {
               На графике показан только шум, когда учитель не говорит.
             </p>
           </PlaceholderCard>
+
+          {/* ─── Анализ речи урока (STT + YandexGPT) ─── */}
+          {analyzing && (
+            <PlaceholderCard title="Анализ урока">
+              <p className="recording-indicator recording-indicator--active">
+                🔄 Распознаю речь урока и формирую отчёт…
+              </p>
+              <p className="muted">
+                Расшифровка речи (Whisper) и анализ через Алису AI — это занимает
+                несколько секунд.
+              </p>
+            </PlaceholderCard>
+          )}
+
+          {!analyzing && lessonReport && !lessonReport.ok && (
+            <PlaceholderCard title="Анализ речи урока">
+              <p className="muted">{lessonReport.note || 'Анализ речи недоступен.'}</p>
+            </PlaceholderCard>
+          )}
+
+          {!analyzing && lessonReport && lessonReport.ok && (
+            <>
+              <PlaceholderCard title="Поведение учеников">
+                {lessonReport.students.length ? (
+                  <ul className="list">
+                    {lessonReport.students.map((s, i) => (
+                      <li key={i} className="list__item list__item--column">
+                        <div className="list__item-row">
+                          <span>{s.name}</span>
+                          <span
+                            className={`badge badge--${
+                              s.type === 'praise' ? 'strong' : 'weak'
+                            }`}
+                          >
+                            {s.type === 'praise' ? 'Похвала' : 'Замечание'}
+                          </span>
+                        </div>
+                        {s.quote && (
+                          <p className="muted profile-comment">«{s.quote}»</p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted">
+                    Учитель не обращался к ученикам по именам.
+                  </p>
+                )}
+              </PlaceholderCard>
+
+              <div className="form-grid">
+                <PlaceholderCard title="Тезисы урока">
+                  {lessonReport.summary.length ? (
+                    <ul className="bullet-list">
+                      {lessonReport.summary.map((line, i) => (
+                        <li key={i}>{line}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted">Тезисы не выделены.</p>
+                  )}
+                </PlaceholderCard>
+                <PlaceholderCard title="Домашнее задание">
+                  {lessonReport.homework ? (
+                    <p>{lessonReport.homework}</p>
+                  ) : (
+                    <p className="muted">Домашнее задание на уроке не названо.</p>
+                  )}
+                </PlaceholderCard>
+              </div>
+            </>
+          )}
         </>
       )}
     </div>

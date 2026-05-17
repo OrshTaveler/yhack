@@ -132,6 +132,20 @@ export interface RecentWorkDto {
   ai_comment?: string | null;
 }
 
+export interface StudentMentionDto {
+  name: string;
+  type: 'praise' | 'remark';
+  quote: string;
+}
+
+export interface LessonReportDto {
+  students: StudentMentionDto[];
+  summary: string[];
+  homework: string;
+  ok: boolean;
+  note?: string;
+}
+
 export interface StudentProfileDto {
   student_id: string;
   student_name: string;
