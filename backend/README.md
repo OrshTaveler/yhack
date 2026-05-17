@@ -147,6 +147,20 @@ backend/
 
 Клиенту отдаются presigned URL (временные ссылки на скачивание).
 
+## База знаний и проверка домашек
+
+Справочные факты хранятся в **Yandex AI Search** (vector store). Исходник для индекса: `ai_search/knowledge_prechunked.jsonl` (см. `ai_search/README.md`).
+
+Пайплайн после загрузки фото (`POST /api/homework/upload`):
+
+1. OCR (Yandex Vision)
+2. Антиплагиат (text.ru)
+3. AI-детектор (YandexGPT)
+4. Поиск фактов: AI Search по OCR-тексту (до 3 попыток с backoff)
+5. Замечания для учителя (YandexGPT + контекст из индекса)
+
+В AI Studio создайте vector store из `knowledge_prechunked.jsonl` и укажите ID в `.env` как `YANDEX_KNOWLEDGE_INDEX_ID`.
+
 ## Переменные окружения
 
 См. `.env.example`.

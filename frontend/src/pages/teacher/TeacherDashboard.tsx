@@ -14,7 +14,7 @@ export function TeacherDashboard() {
         title="Кабинет учителя"
         description="Проверка работ, анализ дисциплины и статистика по классам"
       />
-      <AsyncState loading={loading} error={error}>
+      <AsyncState loading={loading} error={error} empty={!data}>
         {data && (
           <div className="stats-row">
             <StatCard
@@ -34,7 +34,7 @@ export function TeacherDashboard() {
       <div className="dashboard-grid">
         <Link to="/teacher/homework" className="dashboard-tile">
           <h3>Проверка домашних работ</h3>
-          <p>Оценка ИИ, фото работы, подтверждение или правка оценки</p>
+          <p>Замечания ИИ, фото работы, ваша оценка по шкале 2–5</p>
         </Link>
         <Link to="/teacher/noise" className="dashboard-tile">
           <h3>Анализ шума в классе</h3>

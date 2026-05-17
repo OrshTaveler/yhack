@@ -22,7 +22,7 @@ export function HomeworkReviewPage() {
 
   const selectItem = (item: HomeworkDto) => {
     setSelected(item);
-    setGrade(String(item.teacher_grade ?? item.ai_grade ?? ''));
+    setGrade(item.teacher_grade != null ? String(item.teacher_grade) : '');
     setSaveError(null);
   };
 
@@ -52,7 +52,7 @@ export function HomeworkReviewPage() {
     <div className="page">
       <PageHeader
         title="Проверка домашних работ"
-        description="Работы учеников с оценкой ИИ и загруженными фотографиями"
+        description="Работы учеников с замечаниями ИИ и загруженными фотографиями"
       />
       <div className="homework-layout">
         <PlaceholderCard title="Очередь работ">
@@ -73,8 +73,8 @@ export function HomeworkReviewPage() {
                     <strong>{item.student_name}</strong>
                     <span className="muted"> · {item.subject_name}</span>
                   </div>
-                  {item.ai_grade != null && (
-                    <span className="badge badge--ai">ИИ: {item.ai_grade}</span>
+                  {item.status === 'ai_reviewed' && (
+                    <span className="badge badge--ai">Есть замечания ИИ</span>
                   )}
                 </li>
               ))}
@@ -97,11 +97,11 @@ export function HomeworkReviewPage() {
                 <p>
                   <strong>Ученик:</strong> {selected.student_name}
                 </p>
-                <p>
-                  <strong>Оценка ИИ:</strong> {selected.ai_grade ?? '—'}
-                </p>
-                <p>
-                  <strong>Комментарий ИИ:</strong> {selected.ai_comment ?? '—'}
+                <p className="homework-preview__ai-notes">
+                  <strong>Замечания ИИ для учителя:</strong>
+                  <span className="homework-preview__ai-text">
+                    {selected.ai_comment ?? '—'}
+                  </span>
                 </p>
                 <p>
                   <strong>Статус:</strong> {STATUS_LABEL[selected.status] ?? selected.status}

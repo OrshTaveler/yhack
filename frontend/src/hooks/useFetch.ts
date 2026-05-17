@@ -10,6 +10,9 @@ export function useFetch<T>(fetcher: () => Promise<T>, deps: unknown[] = []) {
     setError(null);
     try {
       const result = await fetcher();
+      if (result == null) {
+        throw new Error('Сервер вернул пустой ответ');
+      }
       setData(result);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка загрузки');

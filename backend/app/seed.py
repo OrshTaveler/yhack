@@ -8,9 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import HomeworkStatus, UserRole
 from app.core.security import hash_password
-from app.data.subject_knowledge import KNOWLEDGE_BY_SUBJECT
 from app.models.homework import HomeworkSubmission
-from app.models.knowledge import SubjectKnowledgeFact
 from app.models.school import ClassGroup, ClassTeacherAssignment, StudentEnrollment, Subject
 from app.models.user import User
 
@@ -26,6 +24,7 @@ DEMO_SUBJECTS = [
     "Русский язык",
     "Физика",
     "История",
+    "Биология",
     "Английский язык",
 ]
 
@@ -42,33 +41,34 @@ DEMO_HOMEWORKS = [
     ("История", 3.0, 3.0, 10, "Материал выучен лучше, но хронология всё ещё путается."),
     ("Математика", 5.0, None, 4, "Работа проверена ИИ, замечаний почти нет."),
     ("Физика", 4.0, None, 2, "ИИ-проверка: решение верное, проверьте размерности."),
+    ("Биология", 4.0, 4.0, 18, "Верно описан фотосинтез, уточните роль хлорофилла."),
 ]
 
 
-def seed_knowledge_facts(db: Session) -> None:
-    """Идемпотентно заполняет базу знаний по предметам."""
-    for subject_name, facts in KNOWLEDGE_BY_SUBJECT.items():
-        subject = db.query(Subject).filter(Subject.name == subject_name).first()
-        if subject is None:
-            continue
-        existing_count = (
-            db.query(SubjectKnowledgeFact)
-            .filter(SubjectKnowledgeFact.subject_id == subject.id)
-            .count()
+def _ensure_subjects(db: Session) -> None:
+    """Добавляет предметы, которых нет в уже созданной БД (История, Биология и др.)."""
+    for name in DEMO_SUBJECTS:
+        if db.query(Subject).filter(Subject.name == name).first() is None:
+            db.add(Subject(name=name))
+    db.flush()
+
+
+def _ensure_demo_teacher_assignment(db: Session) -> None:
+    """Если БД уже была создана без привязки учителя к классу — добавить."""
+    teacher = db.query(User).filter(User.email == "teacher@school.ru").first()
+    class_5a = db.query(ClassGroup).filter(ClassGroup.name == "5А").first()
+    if not teacher or not class_5a:
+        return
+    exists = (
+        db.query(ClassTeacherAssignment)
+        .filter(
+            ClassTeacherAssignment.teacher_id == teacher.id,
+            ClassTeacherAssignment.class_id == class_5a.id,
         )
-        if existing_count > 0:
-            continue
-        for topic, content, grade_from, grade_to, sort_order in facts:
-            db.add(
-                SubjectKnowledgeFact(
-                    subject_id=subject.id,
-                    topic=topic,
-                    content=content,
-                    grade_from=grade_from,
-                    grade_to=grade_to,
-                    sort_order=sort_order,
-                )
-            )
+        .first()
+    )
+    if not exists:
+        db.add(ClassTeacherAssignment(class_id=class_5a.id, teacher_id=teacher.id))
 
 
 def seed_demo_data(db: Session) -> None:
@@ -89,7 +89,8 @@ def seed_demo_data(db: Session) -> None:
         users[role.value] = user
 
     if db.query(ClassGroup).first():
-        seed_knowledge_facts(db)
+        _ensure_subjects(db)
+        _ensure_demo_teacher_assignment(db)
         db.commit()
         return
 
@@ -136,5 +137,4 @@ def seed_demo_data(db: Session) -> None:
                 )
             )
 
-    seed_knowledge_facts(db)
     db.commit()

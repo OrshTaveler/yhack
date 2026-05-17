@@ -1,48 +1,18 @@
 from __future__ import annotations
 
 from typing import Optional
-from uuid import UUID
-
-from sqlalchemy import or_
-from sqlalchemy.orm import Session
 
 from app.models.homework import HomeworkSubmission
-from app.models.knowledge import SubjectKnowledgeFact
-
-MAX_FACTS_IN_PROMPT = 20
 
 
-def get_facts_for_review(
-    db: Session,
-    subject_id: UUID,
-    grade: Optional[int] = None,
-) -> list[SubjectKnowledgeFact]:
-    query = db.query(SubjectKnowledgeFact).filter(SubjectKnowledgeFact.subject_id == subject_id)
-
-    if grade is not None:
-        query = query.filter(
-            or_(
-                SubjectKnowledgeFact.grade_from.is_(None),
-                SubjectKnowledgeFact.grade_from <= grade,
-            ),
-            or_(
-                SubjectKnowledgeFact.grade_to.is_(None),
-                SubjectKnowledgeFact.grade_to >= grade,
-            ),
-        )
-
-    return query.order_by(SubjectKnowledgeFact.sort_order).limit(MAX_FACTS_IN_PROMPT).all()
-
-
-def format_knowledge_context(subject_name: str, facts: list[SubjectKnowledgeFact], grade: Optional[int]) -> str:
-    if not facts:
+def format_chunks_context(subject_name: str, chunks: list[str], grade: Optional[int]) -> str:
+    if not chunks:
         return f"Справочные факты по предмету «{subject_name}» не найдены."
 
     grade_label = f" ({grade} класс)" if grade is not None else ""
-    lines = [f"Справочные факты по предмету «{subject_name}»{grade_label}:"]
-    for fact in facts:
-        topic = f"[{fact.topic}] " if fact.topic else ""
-        lines.append(f"- {topic}{fact.content}")
+    lines = [f"Релевантные факты из базы знаний «{subject_name}»{grade_label}:"]
+    for chunk in chunks:
+        lines.append(f"- {chunk.strip()}")
     return "\n".join(lines)
 
 
@@ -50,21 +20,38 @@ def build_homework_review_prompt(
     submission: HomeworkSubmission,
     subject_name: str,
     class_grade: Optional[int],
-    facts: list[SubjectKnowledgeFact],
+    knowledge_context: str,
+    ocr_text: Optional[str] = None,
+    text_unique: Optional[float] = None,
+    ai_probability: Optional[float] = None,
     image_url: Optional[str] = None,
 ) -> str:
-    knowledge_block = format_knowledge_context(subject_name, facts, class_grade)
-    image_line = f"\nФото работы: {image_url}" if image_url else "\nФото работы приложено."
+    ocr_block = ocr_text.strip() if ocr_text and ocr_text.strip() else "(текст не распознан)"
+    plag_line = f"Уникальность текста (антиплагиат): {text_unique:.0f}%." if text_unique is not None else ""
+    ai_line = (
+        f"Вероятность AI-генерации текста: {ai_probability:.0f}%."
+        if ai_probability is not None
+        else ""
+    )
+    image_line = f"\nФото работы: {image_url}" if image_url else ""
 
-    return f"""Ты — помощник учителя. Проверь домашнюю работу ученика по предмету «{subject_name}».
-Шкала оценок: от 2 до 5 (дробные значения допустимы, например 4.5).
+    return f"""Ты — помощник учителя. Проанализируй домашнюю работу ученика по предмету «{subject_name}».
+Оценку НЕ ставь — только подскажи учителю, на что обратить внимание при проверке.
 
-{knowledge_block}
+{knowledge_context}
+
+Текст работы (OCR):
+{ocr_block}
+
+{plag_line}
+{ai_line}
 
 Инструкция:
-1. Сверь решение на фото со справочными фактами выше.
-2. Укажи конкретные ошибки или подтверди правильность.
-3. Поставь оценку от 2 до 5 и краткий комментарий на русском языке.
+1. Сверь решение со справочными фактами выше.
+2. Найди проблемные места: ошибки, неточности, пропуски, сомнительные рассуждения.
+3. Для каждого замечания укажи фрагмент решения (цитату из OCR или описание места).
+4. Кратко отметь сильные стороны, если они есть.
+5. Не предлагай итоговый балл — оценку выставит учитель.
 {image_line}
 ID работы: {submission.id}
 """

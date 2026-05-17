@@ -1,5 +1,4 @@
 from app.models.homework import HomeworkSubmission
-from app.models.knowledge import SubjectKnowledgeFact
 from app.models.noise import NoiseSample, NoiseSession, StudentNoiseStat
 from app.models.schedule import ClassSubjectHours, ScheduleSlot
 from app.models.school import ClassGroup, ClassTeacherAssignment, StudentEnrollment, Subject
@@ -9,7 +8,6 @@ __all__ = [
     "User",
     "ClassGroup",
     "Subject",
-    "SubjectKnowledgeFact",
     "ClassTeacherAssignment",
     "StudentEnrollment",
     "ClassSubjectHours",

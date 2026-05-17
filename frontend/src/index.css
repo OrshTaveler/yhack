@@ -692,6 +692,19 @@ select {
   }
 }
 
+.homework-preview__ai-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.homework-preview__ai-text {
+  display: block;
+  white-space: pre-wrap;
+  line-height: 1.45;
+  color: var(--text);
+}
+
 .homework-preview__photo {
   min-height: 180px;
   display: grid;

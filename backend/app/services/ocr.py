@@ -21,11 +21,22 @@ _FALLBACK_TEXT = (
 )
 
 
+def _log_ocr_result(source: str, text: str) -> None:
+    preview = text if len(text) <= 4000 else f"{text[:4000]}… [обрезано, всего {len(text)} симв.]"
+    logger.info("OCR [%s]: %d симв.\n---\n%s\n---", source, len(text), preview)
+
+
 def recognize(image_bytes: bytes, mime: str = "JPEG") -> str:
     """Фото → распознанный текст. При ошибке возвращает заглушку."""
+    if not image_bytes:
+        logger.warning("OCR: пустой файл изображения")
+        return ""
+
+    logger.info("OCR: запрос к Vision (%d байт, %s)", len(image_bytes), mime)
     settings = get_settings()
     if not settings.yandex_api_key or not settings.yandex_folder_id:
         logger.warning("OCR: нет ключей Yandex — использую заглушку")
+        _log_ocr_result("заглушка (нет ключей)", _FALLBACK_TEXT)
         return _FALLBACK_TEXT
 
     payload = {
@@ -52,7 +63,14 @@ def recognize(image_bytes: bytes, mime: str = "JPEG") -> str:
             .get("textAnnotation", {})
             .get("fullText", "")
         )
-        return text.strip() or _FALLBACK_TEXT
+        result = text.strip()
+        if not result:
+            logger.warning("OCR: Vision вернул пустой текст — использую заглушку")
+            _log_ocr_result("заглушка (пустой ответ)", _FALLBACK_TEXT)
+            return _FALLBACK_TEXT
+        _log_ocr_result("vision", result)
+        return result
     except (urllib.error.URLError, json.JSONDecodeError, KeyError) as e:
         logger.warning("OCR упал (%s) — использую заглушку", e)
+        _log_ocr_result("заглушка (ошибка API)", _FALLBACK_TEXT)
         return _FALLBACK_TEXT

@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+backend/_env.crash
 *.egg-info/
 
 # Базы данных (локальные)

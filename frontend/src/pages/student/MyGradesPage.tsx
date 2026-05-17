@@ -24,8 +24,7 @@ export function MyGradesPage() {
                 <tr>
                   <th>Предмет</th>
                   <th>Дата сдачи</th>
-                  <th>Оценка ИИ (2–5)</th>
-                  <th>Оценка учителя (2–5)</th>
+                  <th>Оценка (2–5)</th>
                   <th>Статус проверки</th>
                 </tr>
               </thead>
@@ -34,7 +33,6 @@ export function MyGradesPage() {
                   <tr key={item.id}>
                     <td>{item.subject_name}</td>
                     <td>{new Date(item.submitted_at).toLocaleDateString()}</td>
-                    <td>{item.ai_grade ?? '—'}</td>
                     <td>{item.teacher_grade ?? '—'}</td>
                     <td>{item.status}</td>
                   </tr>

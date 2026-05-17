@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import time
 from uuid import UUID
 
 from fastapi import (
@@ -33,6 +34,28 @@ from app.services.homework_ai import run_homework_pipeline
 from app.services.storage import get_presigned_url, upload_file
 
 router = APIRouter(prefix="/homework", tags=["homework"])
+
+DEBUG_LOG_PATH = "/Users/nozhegoff/University/hackaton/.cursor/debug-28fa66.log"
+
+
+# #region agent log
+def _agent_log(hypothesis_id: str, location: str, message: str, data: dict) -> None:
+    try:
+        payload = {
+            "sessionId": "28fa66",
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": int(time.time() * 1000),
+        }
+        with open(DEBUG_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    except Exception:  # noqa: BLE001
+        pass
+
+
+# #endregion
 
 
 def _homework_to_out(item: HomeworkSubmission) -> HomeworkOut:
@@ -91,6 +114,22 @@ def list_for_teacher(
         .order_by(HomeworkSubmission.submitted_at.desc())
         .all()
     )
+    if items:
+        latest = items[0]
+        # #region agent log
+        _agent_log(
+            "H1",
+            "homework.py:list_for_teacher",
+            "teacher list latest homework",
+            {
+                "id": str(latest.id),
+                "status": latest.status.value,
+                "ai_comment_len": len(latest.ai_comment or ""),
+                "ai_comment_is_null": latest.ai_comment is None,
+                "ai_comment_preview": (latest.ai_comment or "")[:120],
+            },
+        )
+        # #endregion
     return HomeworkListResponse(items=[_homework_to_out(i) for i in items])
 
 
@@ -150,12 +189,10 @@ async def upload_homework(
         status=HomeworkStatus.pending,
     )
     db.add(submission)
-    db.flush()
-    run_ai_review(submission, db)
     db.commit()
     db.refresh(submission)
 
-    # Пайплайн проверки (OCR → антиплагиат → AI-детектор) — в фоне,
+    # Пайплайн проверки (OCR → антиплагиат → AI-детектор → БЗ → оценка) — в фоне,
     # т.к. text.ru может проверять до минуты. Ответ ученику — сразу.
     background_tasks.add_task(run_homework_pipeline, submission.id)
 

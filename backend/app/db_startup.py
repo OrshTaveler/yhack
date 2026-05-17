@@ -49,3 +49,11 @@ def ensure_schema_updates() -> None:
                 "ADD COLUMN IF NOT EXISTS ai_prompt_snapshot TEXT"
             )
         )
+        for col_sql in (
+            "ALTER TABLE homework_submissions ADD COLUMN IF NOT EXISTS ocr_text TEXT",
+            "ALTER TABLE homework_submissions ADD COLUMN IF NOT EXISTS text_unique DOUBLE PRECISION",
+            "ALTER TABLE homework_submissions ADD COLUMN IF NOT EXISTS plagiarism_sources TEXT",
+            "ALTER TABLE homework_submissions ADD COLUMN IF NOT EXISTS ai_probability DOUBLE PRECISION",
+            "ALTER TABLE homework_submissions ADD COLUMN IF NOT EXISTS ai_detector_reason TEXT",
+        ):
+            conn.execute(text(col_sql))
