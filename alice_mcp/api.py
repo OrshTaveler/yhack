@@ -9,6 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from voice_filter_stream import VoiceDetector
+from transcriber import VoiceTranscriber
+
 
 app = FastAPI()
 
@@ -21,6 +23,7 @@ app.add_middleware(
 )
 
 detector = VoiceDetector()
+transcriber = VoiceTranscriber()
 
 
 class VoiceRecognitionRequest(BaseModel):
@@ -35,6 +38,7 @@ class VoiceRecognitionResponse(BaseModel):
     current_dbfs: float
     background_noise_dbfs: Optional[float] = None
     rms: float
+    transcript: str = ""
 
 
 @app.get("/health")
@@ -83,6 +87,14 @@ async def recognize_voice(request: VoiceRecognitionRequest):
         if result is None:
             raise HTTPException(status_code=400, detail="No voice detected")
 
+        if result["sampled_person_speaking"]:
+            transcript = transcriber.transcribe_audio(
+                audio_chunk,
+                sample_rate=sample_rate,
+            )
+        else:
+            transcript = ""
+
         return VoiceRecognitionResponse(
             status=result["status"],
             sampled_person_speaking=result["sampled_person_speaking"],
@@ -90,6 +102,7 @@ async def recognize_voice(request: VoiceRecognitionRequest):
             current_dbfs=result["current_dbfs"],
             background_noise_dbfs=result.get("background_noise_dbfs"),
             rms=result["rms"],
+            transcript=transcript,
         )
 
     except HTTPException:

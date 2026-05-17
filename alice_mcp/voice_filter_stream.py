@@ -7,6 +7,8 @@ import torch
 import torch.nn.functional as F
 import soundfile as sf
 
+
+
 try:
     from speechbrain.inference.speaker import EncoderClassifier
 except ImportError:
@@ -129,17 +131,17 @@ class VoiceDetector:
     def process_audio(self, audio):
         audio = np.asarray(audio, dtype=np.float32)
         audio = np.clip(audio, -1.0, 1.0)
-    
+
         rms = calculate_rms(audio)
-    
+
         if rms < self.silence_rms_threshold:
             current_dbfs = calculate_dbfs(audio)
-    
+
             self.background_noise_dbfs = update_background_noise(
                 self.background_noise_dbfs,
                 current_dbfs,
             )
-    
+
             return {
                 "status": "silence",
                 "sampled_person_speaking": False,
@@ -148,15 +150,15 @@ class VoiceDetector:
                 "background_noise_dbfs": round(self.background_noise_dbfs, 1),
                 "rms": round(rms, 4),
             }
-    
+
         live_tensor = audio_numpy_to_tensor(audio)
         live_embedding = get_embedding(self.classifier, live_tensor)
-    
+
         score = cosine_similarity(self.enrolled_embedding, live_embedding)
         sampled_person_speaking = score >= self.match_threshold
-    
+
         current_dbfs = calculate_dbfs(audio)
-    
+
         if sampled_person_speaking:
             status = "sampled_person_speaking"
         else:
@@ -165,7 +167,7 @@ class VoiceDetector:
                 self.background_noise_dbfs,
                 current_dbfs,
             )
-    
+
         return {
             "status": status,
             "sampled_person_speaking": sampled_person_speaking,

@@ -49,6 +49,7 @@ type VoiceRecognitionResponse = {
   current_dbfs: number;
   background_noise_dbfs: number | null;
   rms: number;
+  transcript: string;
 };
 
 type NoisePoint = {
@@ -63,6 +64,7 @@ type TimelineEvent = {
   timestampMs: number;
   current_dbfs: number;
   teacher_speaking: boolean;
+  transcript: string;
 };
 
 type TimelineMinuteWindow = {
@@ -71,6 +73,7 @@ type TimelineMinuteWindow = {
   end_at: string;
   average_loudness_dbfs: number;
   teacher_speaking_percent: number;
+  teacher_transcript: string;
   samples_count: number;
 };
 
@@ -82,7 +85,12 @@ function buildTimelineJson(
 
   const buckets = new Map<
     number,
-    { totalDbfs: number; teacherSpeakingCount: number; samplesCount: number }
+    {
+      totalDbfs: number;
+      teacherSpeakingCount: number;
+      teacherTranscriptParts: string[];
+      samplesCount: number;
+    }
   >();
 
   events.forEach((event) => {
@@ -90,11 +98,18 @@ function buildTimelineJson(
     const bucket = buckets.get(minute) ?? {
       totalDbfs: 0,
       teacherSpeakingCount: 0,
+      teacherTranscriptParts: [],
       samplesCount: 0,
     };
 
     bucket.totalDbfs += event.current_dbfs;
     bucket.teacherSpeakingCount += event.teacher_speaking ? 1 : 0;
+
+    const transcript = event.transcript.trim();
+    if (transcript) {
+      bucket.teacherTranscriptParts.push(transcript);
+    }
+
     bucket.samplesCount += 1;
     buckets.set(minute, bucket);
   });
@@ -109,6 +124,7 @@ function buildTimelineJson(
       teacher_speaking_percent: Number(
         ((bucket.teacherSpeakingCount / bucket.samplesCount) * 100).toFixed(1),
       ),
+      teacher_transcript: bucket.teacherTranscriptParts.join(' ').trim(),
       samples_count: bucket.samplesCount,
     }));
 }
@@ -325,12 +341,14 @@ export function ClassroomNoisePage() {
       timestampMs: Date.now(),
       current_dbfs: result.current_dbfs,
       teacher_speaking: result.sampled_person_speaking,
+      transcript: result.transcript ?? '',
     };
 
     timelineEventsRef.current = [...timelineEventsRef.current, event];
 
     // Локально сохраняем JSON таймлайна урока. Пока никуда не отправляем.
-    // Формат: окна по 1 минуте, средняя громкость и процент времени, когда говорил учитель.
+    // Формат: окна по 1 минуте, средняя громкость, процент времени, когда говорил учитель,
+    // и поминутно собранная расшифровка речи учителя из поля transcript.
     const timelineJson = buildTimelineJson(
       timelineEventsRef.current,
       lessonStartedAtRef.current,
@@ -378,7 +396,11 @@ export function ClassroomNoisePage() {
     try {
       const wavBuffer = encodeWav(samples, sampleRate);
       const base64 = arrayBufferToBase64(wavBuffer);
-      const result = await sendWavChunk(base64, sampleRate);
+      const rawResult = await sendWavChunk(base64, sampleRate);
+      const result: VoiceRecognitionResponse = {
+        ...rawResult,
+        transcript: rawResult.transcript ?? '',
+      };
 
       setProcessedChunks((count) => count + 1);
       setLastResult(result);
