@@ -87,18 +87,22 @@ class TranscribeResponse(BaseModel):
 
 @app.post("/recognize-voice", response_model=VoiceRecognitionResponse)
 async def recognize_voice(request: VoiceRecognitionRequest):
-    """Живой анализ чанка: уровень шума + говорит ли учитель.
-
-    STT здесь НЕ делаем — Whisper на каждом 1-сек чанке тормозит цикл.
-    Полная расшифровка урока — отдельным вызовом /transcribe в конце.
-    """
+    """Живой анализ чанка: уровень шума, говорит ли учитель, расшифровка."""
     try:
-        audio_chunk, _ = decode_wav_base64(request.audio_data)
+        audio_chunk, sample_rate = decode_wav_base64(request.audio_data)
 
         result = detector.process_audio(audio_chunk)
 
         if result is None:
             raise HTTPException(status_code=400, detail="No voice detected")
+
+        if result["sampled_person_speaking"]:
+            transcript = transcriber.transcribe_audio(
+                audio_chunk,
+                sample_rate=sample_rate,
+            )
+        else:
+            transcript = ""
 
         return VoiceRecognitionResponse(
             status=result["status"],
@@ -107,7 +111,7 @@ async def recognize_voice(request: VoiceRecognitionRequest):
             current_dbfs=result["current_dbfs"],
             background_noise_dbfs=result.get("background_noise_dbfs"),
             rms=result["rms"],
-            transcript="",
+            transcript=transcript,
         )
 
     except HTTPException:

@@ -5,11 +5,6 @@ import { RequireAuth } from '@/components/common/RequireAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { AuthPage } from '@/pages/AuthPage';
 import { SchedulePage } from '@/pages/shared/SchedulePage';
-import { DirectorDashboard } from '@/pages/director/DirectorDashboard';
-import { ScheduleGeneratorPage } from '@/pages/director/ScheduleGeneratorPage';
-import { TeacherAssignmentPage } from '@/pages/director/TeacherAssignmentPage';
-import { UserSchedulesPage } from '@/pages/director/UserSchedulesPage';
-import { LessonStatsPage } from '@/pages/director/LessonStatsPage';
 import { TeacherDashboard } from '@/pages/teacher/TeacherDashboard';
 import { HomeworkReviewPage } from '@/pages/teacher/HomeworkReviewPage';
 import { ClassroomNoisePage } from '@/pages/teacher/ClassroomNoisePage';
@@ -36,14 +31,6 @@ export function AppRoutes() {
             <Route element={<AppLayout />}>
               <Route element={<RoleGuard allowed={['teacher', 'student']} />}>
                 <Route path="/schedule" element={<SchedulePage />} />
-              </Route>
-
-              <Route element={<RoleGuard allowed={['director']} />}>
-                <Route path="/director" element={<DirectorDashboard />} />
-                <Route path="/director/schedule-generator" element={<ScheduleGeneratorPage />} />
-                <Route path="/director/assignments" element={<TeacherAssignmentPage />} />
-                <Route path="/director/schedules" element={<UserSchedulesPage />} />
-                <Route path="/director/lesson-stats" element={<LessonStatsPage />} />
               </Route>
 
               <Route element={<RoleGuard allowed={['teacher']} />}>

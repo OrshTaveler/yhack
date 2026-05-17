@@ -9,16 +9,6 @@ export interface MockAccount {
 /** Тестовые учётные записи (до подключения JWT на бэкенде) */
 export const MOCK_ACCOUNTS: MockAccount[] = [
   {
-    email: 'director@school.ru',
-    password: 'director123',
-    user: {
-      id: 'dir-1',
-      name: 'Иванова А.С.',
-      email: 'director@school.ru',
-      role: 'director',
-    },
-  },
-  {
     email: 'teacher@school.ru',
     password: 'teacher123',
     user: {
@@ -41,7 +31,6 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
 ];
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  director: 'Директор',
   teacher: 'Учитель',
   student: 'Ученик',
 };

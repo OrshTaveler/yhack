@@ -225,7 +225,6 @@ function RegisterForm({
         <select className="input" name="role" required defaultValue="student">
           <option value="student">Ученик</option>
           <option value="teacher">Учитель</option>
-          <option value="director">Директор</option>
         </select>
       </label>
       <label className="field">

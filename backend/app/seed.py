@@ -13,7 +13,6 @@ from app.models.school import ClassGroup, ClassTeacherAssignment, StudentEnrollm
 from app.models.user import User
 
 DEMO_USERS = [
-    ("director@school.ru", "director123", "Иванова А.С.", UserRole.director),
     ("teacher@school.ru", "teacher123", "Петров И.В.", UserRole.teacher),
     ("student@school.ru", "student123", "Сидоров М.А.", UserRole.student),
 ]

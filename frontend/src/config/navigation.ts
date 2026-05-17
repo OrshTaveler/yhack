@@ -7,13 +7,6 @@ export interface NavItem {
 }
 
 export const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
-  director: [
-    { to: '/director', label: 'Обзор', end: true },
-    { to: '/director/schedule-generator', label: 'Генерация расписания' },
-    { to: '/director/assignments', label: 'Назначение классов' },
-    { to: '/director/schedules', label: 'Расписания' },
-    { to: '/director/lesson-stats', label: 'Статистика уроков' },
-  ],
   teacher: [
     { to: '/teacher', label: 'Обзор', end: true },
     { to: '/teacher/homework', label: 'Проверка работ' },
@@ -32,7 +25,6 @@ export const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
 
 export function homePathForRole(role: UserRole): string {
   const map: Record<UserRole, string> = {
-    director: '/director',
     teacher: '/teacher',
     student: '/student',
   };

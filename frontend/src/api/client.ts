@@ -67,7 +67,7 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: 'director' | 'teacher' | 'student';
+  role: 'teacher' | 'student';
 }
 
 export interface TokenResponse {

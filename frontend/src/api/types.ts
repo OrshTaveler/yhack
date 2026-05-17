@@ -54,7 +54,7 @@ export interface UserDto {
   id: string;
   name: string;
   email: string;
-  role: 'director' | 'teacher' | 'student';
+  role: 'teacher' | 'student';
 }
 
 export interface NoiseSessionDto {
